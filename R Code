@@ -1,0 +1,33 @@
+setwd('you directory path, using \ for the divisions')
+Dados <- data.frame(read.csv2('Ripple.csv',header = TRUE, sep = ";", dec = ".")) #Data that I first used fot training the neural nertwork
+library('neuralnet')
+
+A <-as.numeric(Dados[,2])
+A0 <-A[-((length(A)-4):length(A))]  
+A1 <-A[c(-1,-((length(A)-3):length(A)))]
+A2 <-A[c(-c(1,2),-((length(A)-2):length(A)))]
+A3 <-A[c(-c(1,2,3),-((length(A)-1):length(A)))]
+A4 <-A[c(-c(1,2,3,4),-length(A))]
+Saida <-A[c(-c(1,2,3,4,5))]
+
+Y <- cbind(A0,A1,A2,A3,A4,Saida)
+Y.treina <-Y[1:floor(nrow(Y)*0.8),] #80%
+Y.valida<-Y[ceiling(nrow(Y)*0.8):nrow(Y),] #20%
+
+set.seed(1000) #verifique se deseja fixar a semente
+maxit<-as.integer(10000000)
+nn <- neuralnet(Y.treina[,6]~Y.treina[,5]+Y.treina[,4]+Y.treina[,3]+Y.treina[,2]+Y.treina[,1],data=Y.treina,hidden=2,threshold =1,stepmax= maxit)
+nn$result.matrix
+previsao<-compute(nn,Y.valida[,1:5])
+previsao.nn<-previsao$net.result
+
+plot(1:nrow(Y.valida),Y.valida[,6],type='l',col=3,xlab='Tempo',ylab='Abertura Ripple')
+lines(1:nrow(Y.valida),previsao.nn,col=2)
+
+aux<-cbind(0.175519,0.181968,0.185297,0.202532,0.196105) #data from the 5 days before the day of today
+previsao_atual<-compute(nn,aux)
+
+previsao_resultado<-previsao_atual$net.result
+
+
+Forecast<-cat('Previsão: ',round(previsao_resultado,6))
